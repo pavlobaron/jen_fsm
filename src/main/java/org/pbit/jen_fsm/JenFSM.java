@@ -17,12 +17,25 @@ public class JenFSM {
     fsm.init();
   }
 
-  public static Tuple syncSendEvent(FSM fsm, Object event)
+  public static Object syncSendEvent(FSM fsm, Object event)
       throws IllegalAccessException, IllegalArgumentException,
       InvocationTargetException {
-    if (cache.containsKey(fsm.getClass()) &&
-        cache.get(fsm.getClass()).containsKey(fsm.getCurrentStateData().getCurrentState())) {
-      return (Tuple)cache.get(fsm.getClass()).get(fsm.getCurrentStateData().getCurrentState()).invoke(fsm, event);
+    return syncSendEvent(fsm, event, new From(new ReplyHandler() {
+      @Override
+      public void reply(Object reply, String tag) {
+      }
+    }, null));
+  }
+  
+  public static Object syncSendEvent(FSM fsm, Object event, From from)
+      throws IllegalAccessException, IllegalArgumentException,
+      InvocationTargetException {
+    Map<String, Method> methods = cache.get(fsm.getClass());
+    if (methods != null) {
+      Method method = methods.get(fsm.getCurrentStateData().getCurrentState());
+      if (method != null) {
+        return syncSendWithMethod(fsm, event, from, method);
+      }
     }
     
     for (Method method : fsm.getClass().getMethods()) {
@@ -36,7 +49,7 @@ public class JenFSM {
             cache.get(fsm.getClass()).put(method.getName(), method);
           }
           
-          return (Tuple)method.invoke(fsm, event);
+          return syncSendWithMethod(fsm, event, from, method);
         }
       }
     }
@@ -44,9 +57,52 @@ public class JenFSM {
     throw new IllegalStateException("state method '" +
         fsm.getCurrentStateData().getCurrentState() + "' isn't implemented or annotated.");
   }
+  
+  private static Object processSyncEvent(FSM fsm, Object event, From from, Return ret)
+      throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    fsm.getCurrentStateData().setCurrentState(ret.getNextStateName());
+    if (ret.getTag() == REPLY) {
+      reply(from, ret.getPayload());
+      
+      return from.getMostRecentReply();
+    } else if (ret.getTag() == NEXT_STATE) {
+      //nothing to do here
+    } else {
+      reply(from, ret.getPayload());
+      fsm.terminate();
+      
+      return from.getMostRecentReply();
+    }
+    
+    return null;
+  }
 
-  public static Tuple syncSendAllStateEvent(SyncEventHandler fsm, Object event, From from) {
-    return fsm.handleSyncEvent(event, from, ((FSM)fsm).getCurrentStateData().getCurrentState());
+  private static Object syncSendWithMethod(FSM fsm, Object event, From from,
+      Method method) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    Return ret = (Return)method.invoke(fsm, event, from);
+    
+    return processSyncEvent(fsm, event, from, ret);
+  }
+  
+  private static Object syncSendWithHandler(SyncEventHandler fsm, Object event, From from)
+      throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    Return ret = fsm.handleSyncEvent(event, from, ((FSM)fsm).getCurrentStateData().getCurrentState());
+    
+    return processSyncEvent((FSM)fsm, event, from, ret);
+  }
+  
+  public static Object syncSendAllStateEvent(SyncEventHandler fsm, Object event)
+      throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    return syncSendAllStateEvent(fsm, event, new From(new ReplyHandler() {
+      @Override
+      public void reply(Object reply, String tag) {
+      }
+    }, null));
+  }
+  
+  public static Object syncSendAllStateEvent(SyncEventHandler fsm, Object event, From from)
+      throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    return syncSendWithHandler(fsm, event, from);
   }
   
   public static void sendEvent(FSM fsm, Object event) {
@@ -57,7 +113,7 @@ public class JenFSM {
     throw new UnsupportedOperationException("Override to implement async functionality.");
   }
   
-  public static void reply(From from, Tuple reply) {
-    from.getCaller().call(reply);
+  public static void reply(From from, Object reply) {
+    from.reply(reply);
   }
 }

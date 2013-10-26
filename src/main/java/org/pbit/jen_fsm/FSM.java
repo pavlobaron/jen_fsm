@@ -4,4 +4,6 @@ public interface FSM {
 
   public void init();
   public StateData getCurrentStateData();
+  public void terminate();
+  public boolean isTerminated();
 }

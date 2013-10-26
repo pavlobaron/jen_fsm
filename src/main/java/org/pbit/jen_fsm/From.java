@@ -1,20 +1,22 @@
 package org.pbit.jen_fsm;
 
-public class From {
-  protected Callback caller;
-  protected String tag;
+public final class From {
+  private ReplyHandler caller;
+  private String tag;
+  private Object reply;
   
-  public From(Callback caller, String tag) {
+  public From(ReplyHandler caller, String tag) {
     super();
     this.caller = caller;
     this.tag = tag;
   }
 
-  public Callback getCaller() {
-    return caller;
+  public void reply(Object reply) {
+    this.reply = reply;
+    caller.reply(reply, tag);
   }
 
-  public String getTag() {
-    return tag;
+  public Object getMostRecentReply() {
+    return reply;
   }
 }
