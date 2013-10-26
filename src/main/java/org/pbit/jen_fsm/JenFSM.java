@@ -2,12 +2,16 @@ package org.pbit.jen_fsm;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 
 public class JenFSM {
 
   public static String REPLY = "reply";
   public static String NEXT_STATE = "next_state";
   public static String STOP = "stop";
+  
+  protected static Map<Class<? extends FSM>, Map<String, Method>> cache = new HashMap<>();
 
   public static void start(FSM fsm) {
     fsm.init();
@@ -16,9 +20,22 @@ public class JenFSM {
   public static Tuple syncSendEvent(FSM fsm, Object event)
       throws IllegalAccessException, IllegalArgumentException,
       InvocationTargetException {
+    if (cache.containsKey(fsm.getClass()) &&
+        cache.get(fsm.getClass()).containsKey(fsm.getCurrentStateData().getCurrentState())) {
+      return (Tuple)cache.get(fsm.getClass()).get(fsm.getCurrentStateData().getCurrentState()).invoke(fsm, event);
+    }
+    
     for (Method method : fsm.getClass().getMethods()) {
       if (method.isAnnotationPresent(StateMethod.class)) {
         if (method.getName().equals(fsm.getCurrentStateData().getCurrentState())) {
+          if (!cache.containsKey(fsm.getClass())) {
+            cache.put(fsm.getClass(), new HashMap<String, Method>());
+          }
+          
+          if (!cache.get(fsm.getClass()).containsKey(method.getName())) {
+            cache.get(fsm.getClass()).put(method.getName(), method);
+          }
+          
           return (Tuple)method.invoke(fsm, event);
         }
       }
