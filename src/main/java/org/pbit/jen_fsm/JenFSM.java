@@ -9,25 +9,38 @@ public class JenFSM {
   public static String NEXT_STATE = "next_state";
   public static String STOP = "stop";
 
-  public static void sendEvent(Object fsm, Tuple event)
+  public static void start(FSM fsm) {
+    fsm.init();
+  }
+
+  public static Tuple syncSendEvent(FSM fsm, Object event)
       throws IllegalAccessException, IllegalArgumentException,
       InvocationTargetException {
-    Method handleEvent = null;
     for (Method method : fsm.getClass().getMethods()) {
       if (method.isAnnotationPresent(StateMethod.class)) {
-        if (method.getName().equals(event.getTag())) {
-          method.invoke(fsm, event.getPayload());
-          break;
-        }
-      } else {
-        if (method.getName() == "handleEvent") {
-          handleEvent = method;
+        if (method.getName().equals(fsm.getCurrentStateData().getCurrentState())) {
+          return (Tuple)method.invoke(fsm, event);
         }
       }
     }
     
-    if (handleEvent != null) {
-      handleEvent.invoke(fsm, event);
-    }
+    throw new IllegalStateException("state method '" +
+        fsm.getCurrentStateData().getCurrentState() + "' isn't implemented or annotated.");
+  }
+
+  public static Tuple syncSendAllStateEvent(SyncEventHandler fsm, Object event, From from) {
+    return fsm.handleSyncEvent(event, from, ((FSM)fsm).getCurrentStateData().getCurrentState());
+  }
+  
+  public static void sendEvent(FSM fsm, Object event) {
+    throw new UnsupportedOperationException("Override to implement async functionality.");
+  }
+  
+  public static void sendAllStateEvent(EventHandler fsm, Object event, StateData stateData) {
+    throw new UnsupportedOperationException("Override to implement async functionality.");
+  }
+  
+  public static void reply(From from, Tuple reply) {
+    from.getCaller().call(reply);
   }
 }

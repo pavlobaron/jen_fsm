@@ -8,26 +8,40 @@ import java.lang.reflect.InvocationTargetException;
 
 import org.junit.Test;
 
-final class StaticFSM implements EventHandler {
+final class TestStateData extends StateData {
+  
   public int count = 10;
+  
+  public TestStateData(String currentState) {
+    super(currentState);
+  }
+}
+
+final class StaticFSM extends AbstractFSM implements SyncEventHandler {
+  
+  @Override
+  public void init() {
+    stateData = new TestStateData("plus");
+  }
+  
   @StateMethod
-  public Tuple plus(Object payload) {
-    if (payload instanceof Integer) {
-      count += (Integer)payload;
+  public Tuple plus(Object event) {
+    if (event instanceof Integer) {
+      ((TestStateData)stateData).count += (Integer)event;
       
-      return new Tuple(REPLY, count);
+      return new Tuple(REPLY, ((TestStateData)stateData).count);
     } else {
-      throw new IllegalStateException("Integer expected, but " + payload.getClass().getSimpleName() + " received");
+      throw new IllegalStateException("Integer expected, but " + event.getClass().getSimpleName() + " received");
     }
   }
   
-  public Tuple handleEvent(Tuple event) {
-    if (event.getPayload() instanceof Integer) {
-      count += (Integer)event.getPayload();
+  public Tuple handleSyncEvent(Object event, From from, String stateName) {
+    if (event instanceof Integer) {
+      ((TestStateData)stateData).count *= (Integer)event;
       
-      return new Tuple(STOP, count);
+      return new Tuple(STOP, ((TestStateData)stateData).count);
     } else {
-      throw new IllegalStateException("Integer expected, but " + event.getPayload().getClass().getSimpleName() + " received");
+      throw new IllegalStateException("Integer expected, but " + event.getClass().getSimpleName() + " received");
     }
   }
 }
@@ -37,16 +51,27 @@ public class FSMTest
   @Test
   public void testPlusStatic() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
     StaticFSM fsm = new StaticFSM();
-    JenFSM.sendEvent(fsm, new Tuple("plus", 5));
+    JenFSM.start(fsm);
+    Tuple reply = JenFSM.syncSendEvent(fsm, 5);
     
-    assertEquals(fsm.count, 15);
+    assertEquals(JenFSM.REPLY, reply.getTag());
+    assertEquals(new Integer(15), (Integer)reply.getPayload());
   }
   
   @Test
   public void testHandleEventStatic() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
     StaticFSM fsm = new StaticFSM();
-    JenFSM.sendEvent(fsm, new Tuple("dummy", 2));
+    JenFSM.start(fsm);
+    JenFSM.syncSendAllStateEvent(fsm, 2, new From(new Callback() {
+
+      @Override
+      public void call(Tuple reply) {
+        System.out.println("callback called");
+      }      
+    }, "dummy_tag") {
+      
+    });
     
-    assertEquals(fsm.count, 12);
+    assertEquals(20, ((TestStateData)fsm.getCurrentStateData()).count);
   }
 }
