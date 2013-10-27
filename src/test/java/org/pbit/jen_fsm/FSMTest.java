@@ -20,8 +20,8 @@ final class TestStateData extends StateData {
 
 final class StaticFSM extends AbstractFSM implements SyncEventHandler {
   
-  private static String PLUS = "plus";
-  private static String MINUS = "minus";
+  public static String PLUS = "plus";
+  public static String MINUS = "minus";
   public static String DUMMY = "dummy";
   
   @Override
@@ -84,6 +84,9 @@ public class FSMTest
     }, null));
     
     assertEquals(true, fsm.isTerminated());
+    assertEquals((Integer)14, (Integer)fsm.getTerminationReason().getPayload());
+    assertEquals(TerminationReason.NORMAL, fsm.getTerminationReason().getTag());
+    assertEquals(StaticFSM.MINUS, fsm.getCurrentState());
   }
   
   @Test
@@ -96,6 +99,6 @@ public class FSMTest
         assertEquals((Integer)20, (Integer)reply);
       }
     }, null));
-    assertEquals(StaticFSM.DUMMY, fsm.getCurrentStateData().getCurrentState());
+    assertEquals(StaticFSM.DUMMY, fsm.getCurrentState());
   }
 }

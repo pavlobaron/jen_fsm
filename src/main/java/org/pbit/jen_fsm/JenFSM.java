@@ -7,9 +7,9 @@ import java.util.Map;
 
 public class JenFSM {
 
-  public static String REPLY = "reply";
-  public static String NEXT_STATE = "next_state";
-  public static String STOP = "stop";
+  public static int REPLY = 1;
+  public static int NEXT_STATE = 2;
+  public static int STOP = 3;
   
   protected static Map<Class<? extends FSM>, Map<String, Method>> cache = new HashMap<>();
 
@@ -32,7 +32,7 @@ public class JenFSM {
       InvocationTargetException {
     Map<String, Method> methods = cache.get(fsm.getClass());
     if (methods != null) {
-      Method method = methods.get(fsm.getCurrentStateData().getCurrentState());
+      Method method = methods.get(fsm.getCurrentState());
       if (method != null) {
         return syncSendWithMethod(fsm, event, from, method);
       }
@@ -40,7 +40,7 @@ public class JenFSM {
     
     for (Method method : fsm.getClass().getMethods()) {
       if (method.isAnnotationPresent(StateMethod.class)) {
-        if (method.getName().equals(fsm.getCurrentStateData().getCurrentState())) {
+        if (method.getName().equals(fsm.getCurrentState())) {
           if (!cache.containsKey(fsm.getClass())) {
             cache.put(fsm.getClass(), new HashMap<String, Method>());
           }
@@ -55,26 +55,27 @@ public class JenFSM {
     }
     
     throw new IllegalStateException("state method '" +
-        fsm.getCurrentStateData().getCurrentState() + "' isn't implemented or annotated.");
+        fsm.getCurrentState() + "' isn't implemented or annotated.");
   }
   
   private static Object processSyncEvent(FSM fsm, Object event, From from, Return ret)
       throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-    fsm.getCurrentStateData().setCurrentState(ret.getNextStateName());
     if (ret.getTag() == REPLY) {
+      fsm.setCurrentState(ret.getNextStateName());
       reply(from, ret.getPayload());
       
       return from.getMostRecentReply();
     } else if (ret.getTag() == NEXT_STATE) {
+      fsm.setCurrentState(ret.getNextStateName());
       //nothing to do here
-    } else {
+    } else if (ret.getTag() == STOP) {
       reply(from, ret.getPayload());
-      fsm.terminate();
+      fsm.terminate(new TerminationReason(TerminationReason.NORMAL, ret.getPayload()), fsm.getCurrentState());
       
       return from.getMostRecentReply();
     }
     
-    return null;
+    return null; //probably better to have a special Return for ok/error
   }
 
   private static Object syncSendWithMethod(FSM fsm, Object event, From from,
@@ -86,7 +87,7 @@ public class JenFSM {
   
   private static Object syncSendWithHandler(SyncEventHandler fsm, Object event, From from)
       throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-    Return ret = fsm.handleSyncEvent(event, from, ((FSM)fsm).getCurrentStateData().getCurrentState());
+    Return ret = fsm.handleSyncEvent(event, from, ((FSM)fsm).getCurrentState());
     
     return processSyncEvent((FSM)fsm, event, from, ret);
   }
