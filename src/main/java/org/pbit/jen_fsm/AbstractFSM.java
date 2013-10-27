@@ -19,6 +19,10 @@ public abstract class AbstractFSM
   public abstract void init();
 
   public String getCurrentState() {
+    if (stateData == null) {
+      throw new IllegalStateException("FSM isn't properly set up");
+    }
+    
     return stateData.getCurrentState();
   }
   
@@ -27,27 +31,51 @@ public abstract class AbstractFSM
       throw new IllegalStateException("FSM is already terminated");
     }
     
+    if (stateData == null) {
+      throw new IllegalStateException("FSM isn't properly set up");
+    }
+    
     stateData.setCurrentState(state);
   }
   
   public void terminate(TerminationReason reason, String stateName) {
+    if (stateData == null) {
+      throw new IllegalStateException("FSM isn't properly set up");
+    }
+    
     setCurrentState(stateName);
     this.reason = reason; // from here on, the FSM is dead
   }
   
   public boolean isTerminated() {
+    if (stateData == null) {
+      throw new IllegalStateException("FSM isn't properly set up");
+    }
+    
     return reason != null;
   }
 
   public TerminationReason getTerminationReason() {
+    if (stateData == null) {
+      throw new IllegalStateException("FSM isn't properly set up");
+    }
+    
     return reason;
   }
   
   public void registerStateHandler(String state, DynamicStateHandler handler) {
+    if (stateData == null) {
+      throw new IllegalStateException("FSM isn't properly set up");
+    }
+    
     dynamicHandlers.put(state, handler);
   }
 
   public void unregisterStateHandler(String state) {
+    if (stateData == null) {
+      throw new IllegalStateException("FSM isn't properly set up");
+    }
+    
     if (dynamicHandlers.containsKey(state)) {
       dynamicHandlers.remove(state);
     }
