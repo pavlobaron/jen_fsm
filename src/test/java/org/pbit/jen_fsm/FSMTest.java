@@ -18,7 +18,8 @@ final class TestStateData extends StateData {
   }
 }
 
-final class StaticFSM extends AbstractFSM implements SyncEventHandler {
+final class LocalTestFSM extends AbstractFSM
+  implements SyncEventHandler {
   
   public static String PLUS = "plus";
   public static String MINUS = "minus";
@@ -67,7 +68,7 @@ public class FSMTest
 {
   @Test
   public void testPlusStatic() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-    StaticFSM fsm = new StaticFSM();
+    LocalTestFSM fsm = new LocalTestFSM();
     JenFSM.start(fsm);
     JenFSM.syncSendEvent(fsm, 5, new From(new ReplyHandler() {
       @Override
@@ -86,12 +87,12 @@ public class FSMTest
     assertEquals(true, fsm.isTerminated());
     assertEquals((Integer)14, (Integer)fsm.getTerminationReason().getPayload());
     assertEquals(TerminationReason.NORMAL, fsm.getTerminationReason().getTag());
-    assertEquals(StaticFSM.MINUS, fsm.getCurrentState());
+    assertEquals(LocalTestFSM.MINUS, fsm.getCurrentState());
   }
   
   @Test
   public void testHandleEventStatic() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-    StaticFSM fsm = new StaticFSM();
+    LocalTestFSM fsm = new LocalTestFSM();
     JenFSM.start(fsm);
     JenFSM.syncSendAllStateEvent(fsm, 2, new From(new ReplyHandler() {
       @Override
@@ -99,6 +100,38 @@ public class FSMTest
         assertEquals((Integer)20, (Integer)reply);
       }
     }, null));
-    assertEquals(StaticFSM.DUMMY, fsm.getCurrentState());
+    assertEquals(LocalTestFSM.DUMMY, fsm.getCurrentState());
+  }
+  
+  @Test
+  public void testPlusDynamic() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    LocalTestFSM fsm = new LocalTestFSM();
+    JenFSM.start(fsm);
+    fsm.registerStateHandler(LocalTestFSM.PLUS, new DynamicStateHandler() {
+      @Override
+      public Return handle(Object event, From from) {
+        if (event instanceof Integer) {
+          return new Return(REPLY, (Integer)event, LocalTestFSM.PLUS);
+        } else {
+          throw new IllegalStateException("Integer expected, but " + event.getClass().getSimpleName() + " received");
+        }
+      }
+    });
+    
+    JenFSM.syncSendEvent(fsm, 5, new From(new ReplyHandler() {
+      @Override
+      public void reply(Object reply, String tag) {
+        assertEquals((Integer)5, (Integer)reply);
+      }
+    }, null));
+    
+    fsm.unregisterStateHandler(LocalTestFSM.PLUS);
+    
+    JenFSM.syncSendEvent(fsm, 1, new From(new ReplyHandler() {
+      @Override
+      public void reply(Object reply, String tag) {
+        assertEquals((Integer)11, (Integer)reply);
+      }
+    }, null));
   }
 }

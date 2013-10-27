@@ -30,6 +30,16 @@ public class JenFSM {
   public static Object syncSendEvent(FSM fsm, Object event, From from)
       throws IllegalAccessException, IllegalArgumentException,
       InvocationTargetException {
+    
+    // check FSM's registered dynamic handlers
+    DynamicStateHandler handler = ((DynamicFSM)fsm).findStateHandler(fsm.getCurrentState());
+    if (handler != null) {
+      Return ret = handler.handle(event, from);
+      
+      return processSyncEvent(fsm, from, ret);
+    }
+    
+    // check static handlers cache
     Map<String, Method> methods = cache.get(fsm.getClass());
     if (methods != null) {
       Method method = methods.get(fsm.getCurrentState());
@@ -38,6 +48,7 @@ public class JenFSM {
       }
     }
     
+    // find a static handler
     for (Method method : fsm.getClass().getMethods()) {
       if (method.isAnnotationPresent(StateMethod.class)) {
         if (method.getName().equals(fsm.getCurrentState())) {
@@ -58,7 +69,7 @@ public class JenFSM {
         fsm.getCurrentState() + "' isn't implemented or annotated.");
   }
   
-  private static Object processSyncEvent(FSM fsm, Object event, From from, Return ret)
+  private static Object processSyncEvent(FSM fsm, From from, Return ret)
       throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
     if (ret.getTag() == REPLY) {
       fsm.setCurrentState(ret.getNextStateName());
@@ -82,14 +93,14 @@ public class JenFSM {
       Method method) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
     Return ret = (Return)method.invoke(fsm, event, from);
     
-    return processSyncEvent(fsm, event, from, ret);
+    return processSyncEvent(fsm, from, ret);
   }
   
   private static Object syncSendWithHandler(SyncEventHandler fsm, Object event, From from)
       throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
     Return ret = fsm.handleSyncEvent(event, from, ((FSM)fsm).getCurrentState());
     
-    return processSyncEvent((FSM)fsm, event, from, ret);
+    return processSyncEvent((FSM)fsm, from, ret);
   }
   
   public static Object syncSendAllStateEvent(SyncEventHandler fsm, Object event)

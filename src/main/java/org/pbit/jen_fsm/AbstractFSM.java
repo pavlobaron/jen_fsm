@@ -1,6 +1,10 @@
 package org.pbit.jen_fsm;
 
-public abstract class AbstractFSM implements FSM {
+import java.util.HashMap;
+import java.util.Map;
+
+public abstract class AbstractFSM
+  implements FSM, DynamicFSM {
 
   /*
    * FIXME: encapsulating state here feels very wrong, even
@@ -10,6 +14,7 @@ public abstract class AbstractFSM implements FSM {
    */
   protected StateData stateData;
   protected TerminationReason reason;
+  protected Map<String, DynamicStateHandler> dynamicHandlers = new HashMap<>();
   
   public abstract void init();
 
@@ -36,5 +41,19 @@ public abstract class AbstractFSM implements FSM {
 
   public TerminationReason getTerminationReason() {
     return reason;
+  }
+  
+  public void registerStateHandler(String state, DynamicStateHandler handler) {
+    dynamicHandlers.put(state, handler);
+  }
+
+  public void unregisterStateHandler(String state) {
+    if (dynamicHandlers.containsKey(state)) {
+      dynamicHandlers.remove(state);
+    }
+  }
+
+  public DynamicStateHandler findStateHandler(String state) {
+    return dynamicHandlers.get(state);
   }
 }
