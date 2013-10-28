@@ -13,7 +13,7 @@ The class `FSMTest` contains every possible usage scenario und should explain it
 
 Concerning classes and interfaces: the interface `FSM` can, but doesn't have to be used. There is a class called `AbstractFSM` which implements it, and from which FSM's can derive. Only if you plan to use a completely different class within your class hierarchy as FSM, you will have to go with the interface and to implement everything on your own.
 
-When going with `AbstractFSM`, tt is absolutely necessary to run `JenFSM.start` before the first usage. Also, after such an FSM once has been terminated, it can't be used anymore except some information calls. Again, when going with the interface, you'd have to implement this again, but the interface allows you to go around Java's inability of multiple inheritance.
+When going with `AbstractFSM`, it is absolutely necessary to run `JenFSM.start` before the first usage. Also, after such an FSM once has been terminated, it can't be used anymore except some information calls. Again, when going with the interface, you'd have to implement this again, but the interface allows you to go around Java's inability of multiple inheritance.
 
 When using "all-handlers" - such that aren't named, but are getting every single state transition call or every event, you have to decide between the synchronous and asynchronous ones. There is one interface for every such use case - async `EventHandler` and sync `SyncEventHandler`.
 

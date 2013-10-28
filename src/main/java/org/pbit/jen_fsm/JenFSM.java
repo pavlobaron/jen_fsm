@@ -32,11 +32,13 @@ public class JenFSM {
       InvocationTargetException {
     
     // check FSM's registered dynamic handlers
-    DynamicStateHandler handler = ((DynamicFSM)fsm).findStateHandler(fsm.getCurrentState());
-    if (handler != null) {
-      Return ret = handler.handle(event, from);
+    if (fsm instanceof DynamicStateHandler) {
+      DynamicStateHandler handler = ((DynamicFSM)fsm).findStateHandler(fsm.getCurrentState());
+      if (handler != null) {
+        Return ret = handler.handle(event, from);
       
-      return processSyncEvent(fsm, from, ret);
+        return processSyncEvent(fsm, from, ret);
+      }
     }
     
     // check static handlers cache
@@ -100,7 +102,11 @@ public class JenFSM {
       throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
     Return ret = fsm.handleSyncEvent(event, from, ((FSM)fsm).getCurrentState());
     
-    return processSyncEvent((FSM)fsm, from, ret);
+    if (fsm instanceof FSM) {
+      return processSyncEvent((FSM)fsm, from, ret);
+    } else {
+      throw new IllegalStateException("Implementation of the FSM interface expected.");
+    }
   }
   
   public static Object syncSendAllStateEvent(SyncEventHandler fsm, Object event)
