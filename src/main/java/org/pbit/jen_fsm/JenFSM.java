@@ -32,7 +32,7 @@ public class JenFSM {
       InvocationTargetException {
     
     // check FSM's registered dynamic handlers
-    if (fsm instanceof DynamicStateHandler) {
+    if (fsm instanceof DynamicFSM) {
       DynamicStateHandler handler = ((DynamicFSM)fsm).findStateHandler(fsm.getCurrentState());
       if (handler != null) {
         Return ret = handler.handle(event, from);
