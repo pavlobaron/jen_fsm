@@ -9,6 +9,14 @@ Internally, jen_fsm works with a registry of state methods per class. Once used,
 
 ## Usage
 
+Snapshot versions can be obtained from [https://oss.sonatype.org/content/repositories/snapshots/](https://oss.sonatype.org/content/repositories/snapshots/):
+
+    <dependency>
+	    <groupId>org.pbit</groupId>
+	    <artifactId>jen_fsm</artifactId>
+	    <version>0.1-SNAPSHOT</version>
+    </dependency>
+
 The class `FSMTest` contains every possible usage scenario und should explain itself.
 
 Concerning classes and interfaces: the interface `FSM` can, but doesn't have to be used. There is a class called `AbstractFSM` which implements it, and from which FSM's can derive. Only if you plan to use a completely different class within your class hierarchy as FSM, you will have to go with the interface and to implement everything on your own.
@@ -24,7 +32,3 @@ The rest can be easily found in the test case and would be just redundant here. 
 The async parts are provided as template, so one can override methods and implement own async logic on top of whatever library or middleware. Probably, they will never make it into the project for that there are so many different potential transports for async that any decision I make will be the wrong one for somebody else.
 
 Also, timers aren't implemented yet, but will be soon.
-
-## Progress
-
-Work in progress, feedback welcome. This is used in a non-OSS system we're building right now, so it already has one production user.
