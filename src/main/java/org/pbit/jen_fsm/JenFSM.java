@@ -71,8 +71,7 @@ public class JenFSM {
         fsm.getCurrentState() + "' isn't implemented or annotated.");
   }
   
-  private static Object processSyncEvent(FSM fsm, From from, Return ret)
-      throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+  private static Object processSyncEvent(FSM fsm, From from, Return ret) {
     if (ret.getTag() == REPLY) {
       fsm.setCurrentState(ret.getNextStateName());
       reply(from, ret.getPayload());
@@ -98,8 +97,7 @@ public class JenFSM {
     return processSyncEvent(fsm, from, ret);
   }
   
-  private static Object syncSendWithHandler(SyncEventHandler fsm, Object event, From from)
-      throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+  private static Object syncSendWithHandler(SyncEventHandler fsm, Object event, From from) {
     Return ret = fsm.handleSyncEvent(event, from, ((FSM)fsm).getCurrentState());
     
     if (fsm instanceof FSM) {
