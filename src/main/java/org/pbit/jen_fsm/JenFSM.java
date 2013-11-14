@@ -107,8 +107,7 @@ public class JenFSM {
     }
   }
   
-  public static Object syncSendAllStateEvent(SyncEventHandler fsm, Object event)
-      throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+  public static Object syncSendAllStateEvent(SyncEventHandler fsm, Object event) {
     return syncSendAllStateEvent(fsm, event, new From(new ReplyHandler() {
       @Override
       public void reply(Object reply, String tag) {
@@ -116,8 +115,7 @@ public class JenFSM {
     }, null));
   }
   
-  public static Object syncSendAllStateEvent(SyncEventHandler fsm, Object event, From from)
-      throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+  public static Object syncSendAllStateEvent(SyncEventHandler fsm, Object event, From from) {
     return syncSendWithHandler(fsm, event, from);
   }
   
