@@ -57,6 +57,8 @@ As can be seen, the `init()` method is the right place to create the encapsulate
 
 The rest of the state is implementation's own logic - there are no constraints from jen_fsm.
 
+When an FSM is about to get terminated, its method `terminate(reason, state)` will be called.
+
 Implementing a simple "static" state method is as simple as this:
 
 	@StateMethod
